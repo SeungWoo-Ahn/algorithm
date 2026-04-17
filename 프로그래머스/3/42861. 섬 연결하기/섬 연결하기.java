@@ -63,6 +63,7 @@ class Solution {
             if (!isDiffGroup(edge.u, edge.v)) continue;
             cnt++;
             result += edge.cost;
+            if (cnt == n - 1) break;
         }
         return result;
     }
