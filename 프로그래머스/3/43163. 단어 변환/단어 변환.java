@@ -1,76 +1,73 @@
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.*;
 
 class Solution {
     private Map<String, List<String>> adj = new HashMap<>();
-    private Set<String> visited = new HashSet<>();
+    private Set<String> v = new HashSet<>();
+    private int result = 51;
     
-    private boolean setAdj(String begin, String target, String[] words) {
-        boolean findTarget = false;
-        String[] keys = new String[words.length + 1];
-        keys[0] = begin;
-        for (int i = 1; i < keys.length; i++) {
-            keys[i] = words[i - 1];
+    private boolean contains(String target, String[] words) {
+        for (String word : words) {
+            if (word.equals(target)) {
+                return true;
+            }
         }
-        for (int i = 0; i < keys.length - 1; i++) {
-            for (int j = i + 1; j < keys.length; j++) {
-                String a = keys[i];
-                String b = keys[j];
-                if (a.equals(target) || b.equals(target)) {
-                    findTarget = true;
-                }
+        return false;
+    }
+    
+    private void setAdj(String begin, String[] words) {
+        adj.put(begin, new ArrayList<>());
+        for (String word : words) {
+            adj.put(word, new ArrayList<>());
+            if (isAdj(begin, word)) {
+                adj.get(begin).add(word);
+                adj.get(word).add(begin);
+            }
+        }
+        for (int i = 0; i < words.length - 1; i++) {
+            for (int j = 1; j < words.length; j++) {
+                String a = words[i];
+                String b = words[j];
                 if (isAdj(a, b)) {
-                    List<String> aAdj = adj.getOrDefault(a, new ArrayList<String>());
-                    List<String> bAdj = adj.getOrDefault(b, new ArrayList<String>());
-                    aAdj.add(b);
-                    bAdj.add(a);
-                    adj.put(a, aAdj);
-                    adj.put(b, bAdj);
+                    adj.get(a).add(b);
+                    adj.get(b).add(a);
                 }
             }
         }
-        return findTarget;
     }
     
     private boolean isAdj(String a, String b) {
-        int mismatchCnt = 0;
+        int mismatch = 0;
         for (int i = 0; i < a.length(); i++) {
             if (a.charAt(i) != b.charAt(i)) {
-                mismatchCnt++;
-                if (mismatchCnt > 1) {
-                    return false;
-                }
+                mismatch++;
             }
         }
-        return true;
+        return mismatch == 1;
     }
     
-    private int dfs(int depth, String cur, String target) {
+    private boolean dfs(int depth, String cur, String target) {
         if (cur.equals(target)) {
-            return depth;
+            result = Math.min(result, depth);
+            return true;
         }
-        visited.add(cur);
-        int minDepth = 51;
+        boolean found = false;
         for (String nxt : adj.get(cur)) {
-            if (visited.contains(nxt)) continue;
-            int result = dfs(depth + 1, nxt, target);
-            if (result < minDepth) {
-                minDepth = result;
+            if (v.contains(nxt)) continue;
+            v.add(nxt);
+            if (dfs(depth + 1, nxt, target)) {
+                found = true;
             }
+            v.remove(nxt);
         }
-        return minDepth;
+        return found;
     }
     
     public int solution(String begin, String target, String[] words) {
-        boolean findTarget = setAdj(begin, target, words);
-        if (!findTarget) {
+        if (!contains(target, words)) {
             return 0;
         }
-        visited.add(begin);
-        return dfs(0, begin, target);
+        setAdj(begin, words);
+        v.add(begin);
+        return dfs(0, begin, target) ? result : 0;
     }
 }
