@@ -1,74 +1,69 @@
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Collections;
+import java.util.*;
 
 class Solution {
-    private static class Genre implements Comparable<Genre> {
-        private final List<Music> musics;
-        private int accPlayCnt;
+    static class Genre implements Comparable<Genre> {
+        private final List<Song> songs;
+        private int playAcc;
         
         public Genre() {
-            this.musics = new ArrayList<>();
-            this.accPlayCnt = 0;
+            this.songs = new ArrayList<>();
+            this.playAcc = 0;
         }
         
-        public void add(int id, int playCnt) {
-            musics.add(new Music(id, playCnt));
-            accPlayCnt += playCnt;
+        public void add(Song song) {
+            songs.add(song);
+            playAcc += song.play;
         }
         
-        public List<Music> getMusics() {
-            Collections.sort(musics);
-            return musics;
+        public List<Integer> top2SongIds() {
+            Collections.sort(songs);
+            List<Integer> ids = new ArrayList<>();
+            for (int i = 0; i < Math.min(songs.size(), 2); i++) {
+                ids.add(songs.get(i).id);
+            }
+            return ids;
         }
         
         @Override
         public int compareTo(Genre o) {
-            return o.accPlayCnt - accPlayCnt;
+            return o.playAcc - playAcc;
         }
     }
     
-    private static class Music implements Comparable<Music> {
+    static class Song implements Comparable<Song> {
         final int id;
-        final int playCnt;
+        final int play;
         
-        public Music(int id, int playCnt) {
+        public Song(int id, int play) {
             this.id = id;
-            this.playCnt = playCnt;
+            this.play = play;
         }
         
         @Override
-        public int compareTo(Music o) {
-            if (playCnt != o.playCnt) {
-                return o.playCnt - playCnt;
+        public int compareTo(Song o) {
+            if (play != o.play) {
+                return o.play - play;
             }
             return id - o.id;
         }
     }
     
     public List<Integer> solution(String[] genres, int[] plays) {
-        Map<String, Genre> genreMap = new HashMap<>();
+        Map<String, Genre> map = new HashMap<>();
         for (int id = 0; id < genres.length; id++) {
-            Genre genre = genreMap.getOrDefault(genres[id], new Genre());
-            genre.add(id, plays[id]);
-            genreMap.put(genres[id], genre);
+            String key = genres[id];
+            Genre genre = map.getOrDefault(key, new Genre());
+            genre.add(new Song(id, plays[id]));
+            map.put(key, genre);
         }
         List<Genre> gs = new ArrayList<>();
-        for (String key : genreMap.keySet()) {
-            Genre genre = genreMap.get(key);
-            gs.add(genreMap.get(key));
+        for (String key : map.keySet()) {
+            gs.add(map.get(key));
         }
         Collections.sort(gs);
         List<Integer> result = new ArrayList<>();
         for (Genre genre : gs) {
-            int insertCnt = 0;
-            for (Music music : genre.getMusics()) {
-                result.add(music.id);
-                insertCnt++;
-                if (insertCnt == 2) break;
-            }
+            result.addAll(genre.top2SongIds());
         }
         return result;
     }
