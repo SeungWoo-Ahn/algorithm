@@ -1,31 +1,24 @@
 class Solution {
-    private long getMax() {
-        long max = 1L;
-        for (int i = 0; i < 18; i++) {
-            max *= 10;
+    private long simulate(long x, int[] times) {
+        long result = 0;
+        for (int time : times) {
+            result += x / time;
         }
-        return max;
+        return result;
     }
     
     public long solution(int n, int[] times) {
         long st = 1L;
-        long en = getMax();
-        long result = Long.MAX_VALUE;
-        while (st <= en) {
-            long mid = st + ((en - st) >> 1);
-            long people = 0L;
-            for (int time : times) {
-                people += mid / time;
-            }
-            if (people < n) {
-                st = mid + 1;
+        long en = 1_000_000_000L * 1_000_000_000L;
+        while (st < en) {
+            long x = st + (en - st) / 2;
+            long r = simulate(x, times);
+            if (r < n) {
+                st = x + 1;
             } else {
-                en = mid - 1;
-                if (mid < result) {
-                    result = mid;
-                }
+                en = x;
             }
         }
-        return result;
+        return st;
     }
 }
