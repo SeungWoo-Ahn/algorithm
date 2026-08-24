@@ -1,30 +1,11 @@
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 
 class Solution {
-    private static class Edge implements Comparable<Edge> {
-        final int u;
-        final int v;
-        final int cost;
-        
-        public Edge(int u, int v, int cost) {
-            this.u = u;
-            this.v = v;
-            this.cost = cost;
-        }
-        
-        @Override
-        public int compareTo(Edge o) {
-            return cost - o.cost;
-        }
-    }
-    
     private int[] parent;
     
     private void setParent(int n) {
         parent = new int[n];
-        for (int i = 0; i < parent.length; i++) {
+        for (int i = 0; i < n; i++) {
             parent[i] = i;
         }
     }
@@ -36,34 +17,24 @@ class Solution {
         return parent[x] = find(parent[x]);
     }
     
-    private boolean isDiffGroup(int x, int y) {
+    private boolean union(int x, int y) {
         int rootX = find(x);
         int rootY = find(y);
-        if (rootX == rootY) {
-            return false;
-        }
-        if (rootX < rootY) {
-            parent[rootY] = rootX;
-        } else {
-            parent[rootX] = rootY;
-        }
+        if (rootX == rootY) return false;
+        if (rootX < rootY) parent[rootY] = rootX;
+        else parent[rootX] = rootY;
         return true;
     }
     
     public int solution(int n, int[][] costs) {
-        List<Edge> edges = new ArrayList<>();
-        for (int[] cost : costs) {
-            edges.add(new Edge(cost[0], cost[1], cost[2]));
-        }
-        Collections.sort(edges);
         setParent(n);
+        Arrays.sort(costs, (o1, o2) -> o1[2] - o2[2]);
         int cnt = 0;
         int result = 0;
-        for (Edge edge : edges) {
-            if (!isDiffGroup(edge.u, edge.v)) continue;
-            cnt++;
-            result += edge.cost;
-            if (cnt == n - 1) break;
+        for (int[] cost : costs) {
+            if (!union(cost[0], cost[1])) continue;
+            result += cost[2];
+            if (++cnt == n - 1) break;
         }
         return result;
     }
