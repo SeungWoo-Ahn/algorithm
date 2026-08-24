@@ -1,54 +1,34 @@
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 
 class Solution {
-    private static class Ticket implements Comparable<Ticket> {
-        final String from;
-        final String to;
-        
-        public Ticket(String[] ticket) {
-            this.from = ticket[0];
-            this.to = ticket[1];
-        }
-        
-        @Override
-        public int compareTo(Ticket o) {
-            if (from.equals(o.from)) {
-                return to.compareTo(o.to);
-            }
-            return from.compareTo(o.from);
-        }
-    }
+    private String[][] tickets;
+    private Map<String, List<Integer>> routes = new HashMap<>();
+    private boolean[] used;
+    private String result = "a";
     
-    private boolean backtracking(int depth, String cur, List<Ticket> ts, String[] result, boolean[] visited) {
-        if (depth == ts.size()) {
-            return true;
-        }
-        for (int i = 0; i < ts.size(); i++) {
-            Ticket ticket = ts.get(i);
-            if (!ticket.from.equals(cur)) continue;
-            if (visited[i]) continue;
-            visited[i] = true;
-            result[depth + 1] = ticket.to;
-            if (backtracking(depth + 1, ticket.to, ts, result, visited)) {
-                return true;
+    private void dfs(int depth, String cur, String path) {
+        if (depth == tickets.length) {
+            if (path.compareTo(result) < 0) {
+                result = path;
             }
-            visited[i] = false;
+            return;
         }
-        return false;
+        for (int i : routes.getOrDefault(cur, List.of())) {
+            if (used[i]) continue;
+            used[i] = true;
+            dfs(depth + 1, tickets[i][1], path + " " + tickets[i][1]);
+            used[i] = false;
+        }
     }
     
     public String[] solution(String[][] tickets) {
-        List<Ticket> ts = new ArrayList<>();
-        for (String[] ticket : tickets) {
-            ts.add(new Ticket(ticket));
+        this.tickets = tickets;
+        for (int i = 0; i < tickets.length; i++) {
+            routes.putIfAbsent(tickets[i][0], new ArrayList<>());
+            routes.get(tickets[i][0]).add(i);
         }
-        Collections.sort(ts);
-        String[] result = new String[ts.size() + 1];
-        boolean[] visited = new boolean[ts.size()];
-        result[0] = "ICN";
-        backtracking(0, "ICN", ts, result, visited);
-        return result;
+        used = new boolean[tickets.length];
+        dfs(0, "ICN", "ICN");
+        return result.split(" ");
     }
 }
