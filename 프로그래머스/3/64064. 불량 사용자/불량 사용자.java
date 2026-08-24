@@ -1,53 +1,44 @@
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.*;
 
 class Solution {
-    private List<Integer>[] getBannedCombinations(String[] user_id, String[] banned_id) {
-        List<Integer>[] bannedCombinations = new List[banned_id.length];
-        for (int i = 0; i < banned_id.length; i++) {
-            List<Integer> bannedCombination = new ArrayList<>();
-            for (int j = 0; j < user_id.length; j++) {
-                if (matches(user_id[j], banned_id[i])) {
-                    bannedCombination.add(j);
-                }
-            }
-            bannedCombinations[i] = bannedCombination;
-        }
-        return bannedCombinations;
-    }
+    private List<Integer>[] matches;
+    private Set<Integer> result = new HashSet<>();
     
-    private boolean matches(String id, String target) {
-        if (id.length() != target.length()) {
+    private boolean match(String uid, String bid) {
+        if (uid.length() != bid.length()) {
             return false;
         }
-        for (int i = 0; i < target.length(); i++) {
-            if (target.charAt(i) == '*') continue;
-            if (id.charAt(i) != target.charAt(i)) {
+        for (int i = 0; i < uid.length(); i++) {
+            if (bid.charAt(i) == '*') continue;
+            if (uid.charAt(i) != bid.charAt(i)) {
                 return false;
             }
         }
         return true;
     }
     
-    private Set<Integer> result = new HashSet<>();
-    
-    private void backtracking(int depth, int used, List<Integer>[] bannedCombinations) {
-        if (depth == bannedCombinations.length) {
-            result.add(used);
+    private void dfs(int depth, int v) {
+        if (depth == matches.length) {
+            result.add(v);
             return;
         }
-        for (int id : bannedCombinations[depth]) {
-            if ((used & (1 << id)) != 0) continue;
-            int nxtUsed = used | (1 << id);
-            backtracking(depth + 1, nxtUsed, bannedCombinations);
+        for (int i : matches[depth]) {
+            if ((v & (1 << i)) != 0) continue;
+            dfs(depth + 1, v | (1 << i));
         }
-    }
+    } 
     
     public int solution(String[] user_id, String[] banned_id) {
-        List<Integer>[] bannedCombinations = getBannedCombinations(user_id, banned_id);
-        backtracking(0, 0, bannedCombinations);
+        matches = new List[banned_id.length];
+        for (int i = 0; i < banned_id.length; i++) {
+            matches[i] = new ArrayList<>();
+            for (int j = 0; j < user_id.length; j++) {
+                if (match(user_id[j], banned_id[i])) {
+                    matches[i].add(j);
+                }
+            }
+        }
+        dfs(0, 0);
         return result.size();
     }
 }
