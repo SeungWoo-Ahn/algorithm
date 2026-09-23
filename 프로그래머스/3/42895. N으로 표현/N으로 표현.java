@@ -1,44 +1,35 @@
-import java.util.Set;
-import java.util.HashSet;
+import java.util.*;
 
-class Solution {    
+class Solution {
     public int solution(int n, int number) {
         Set<Integer>[] dp = new Set[9];
-        Set<Integer> used = new HashSet<>();
         int cur = n;
-        for (int depth = 1; depth < dp.length; depth++) {
-            dp[depth] = new HashSet<>();
+        for (int i = 1; i < 9; i++) {
             if (cur == number) {
-                return depth;
+                return i;
             }
-            dp[depth].add(cur);
+            dp[i] = new HashSet<>();
+            dp[i].add(cur);
             cur = cur * 10 + n;
         }
-        for (int depth = 2; depth < dp.length; depth++) {
-            for (int left = 1; left < depth; left++) {
-                int right = depth - left;
-                for (int leftNum : dp[left]) {
-                    for (int rightNum : dp[right]) {
-                        int[] cand = {
-                            leftNum + rightNum, 
-                            leftNum - rightNum, 
-                            rightNum - leftNum, 
-                            leftNum * rightNum,
-                            leftNum / rightNum,
-                            rightNum / leftNum
-                        };
-                        for (int num : cand) {
-                            if (num <= 0 || used.contains(num)) continue;
-                            if (num == number) {
-                                return depth;
-                            }
-                            used.add(num);
-                            dp[depth].add(num);
+        for (int i = 2; i < 9; i++)
+            for (int j = 1; j < i; j++)
+                for (int a : dp[j])
+                    for (int b : dp[i - j]) {
+                        if (a + b == number) return i;
+                        dp[i].add(a + b);
+                        
+                        if (a - b == number) return i;
+                        dp[i].add(a - b);
+                        
+                        if (a * b == number) return i;
+                        dp[i].add(a * b);
+                        
+                        if (b != 0) {
+                            if (a / b == number) return i;
+                            dp[i].add(a / b);
                         }
                     }
-                }
-            }
-        }
         return -1;
     }
 }
