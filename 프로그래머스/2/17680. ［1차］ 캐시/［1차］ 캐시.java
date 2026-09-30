@@ -1,95 +1,119 @@
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 
 class Solution {
-    private static class Node {
-        final String value;
+    static class Node {
+        final String data;
         Node prev, next;
         
-        public Node(String value) { 
-            this.value = value; 
+        public Node(String data) {
+            this.data = data;
+            this.prev = this.next = null;
+        }
+        
+        public void link(Node head) {
+            if (head != null) {
+                head.prev = this;
+            }
+            this.next = head;
+        }
+        
+        public void unlink() {
+            if (prev != null) {
+                prev.next = next;
+            }
+            if (next != null) {
+                next.prev = prev;
+            }
+            this.prev = this.next = null;
         }
     }
-
-    private static class OrderList {
+    
+    static class History {
         private Node head, tail;
-
-        public Node add(String value) {
-            Node node = new Node(value);
+        
+        public History() {
+            this.head = this.tail = null;
+        }
+        
+        public void add(Node node) {
             if (head == null) {
                 head = tail = node;
             } else {
-                node.next = head;
-                head.prev = node;
+                node.link(head);
                 head = node;
             }
-            return node;
         }
-
+        
         public void refresh(Node node) {
             if (node == head) return;
-            if (node.prev != null) {
-                node.prev.next = node.next;
-            }
-            if (node.next != null) {
-                node.next.prev = node.prev;
-            }
             if (node == tail) {
-                tail = node.prev;
+                Node prev = node.prev;
+                node.unlink();
+                node.link(head);
+                tail = prev;
+                head = node;
+                return;
             }
-            node.prev = null;
-            node.next = head;
-            if (head != null) {
-                head.prev = node;
-            }
+            node.unlink();
+            node.link(head);
             head = node;
         }
-
-        public Node removeLast() {
-            if (tail == null) return null;
-            Node removed = tail;
-            if (head == tail) {
-                head = tail = null;
-            } else {
-                tail = tail.prev;
-                tail.next = null;
+        
+        public Node evict() {
+            if (tail == null) {
+                return null;
             }
-            return removed;
+            if (head == tail) {
+                Node last = tail;
+                head = tail = null;
+                return last;
+            }
+            Node last = tail;
+            Node prev = last.prev;
+            last.unlink();
+            tail = prev;
+            return last;
         }
     }
-
-    private static class LRUCache {
-        private final Map<String, Node> cache = new HashMap<>();
-        private final OrderList orderList = new OrderList();
-        private final int capacity;
-
-        public LRUCache(int capacity) { 
-            this.capacity = capacity; 
+    
+    static class LruCache {
+        private final Map<String, Node> cache;
+        private final History history;
+        private final int size;
+        
+        public LruCache(int size) {
+            this.cache = new HashMap<>();
+            this.history = new History();
+            this.size = size;
         }
-
-        public boolean add(String value) {
-            if (cache.containsKey(value)) {
-                orderList.refresh(cache.get(value));
-                return true;
+        
+        public boolean add(String data) {
+            if (cache.containsKey(data)) {
+                history.refresh(cache.get(data));
+                return false;
             }
-            if (cache.size() >= capacity) {
-                Node old = orderList.removeLast();
-                if (old != null) {
-                    cache.remove(old.value);
+            if (cache.size() == size) {
+                Node last = history.evict();
+                if (last != null) {
+                    cache.remove(last.data);
                 }
             }
-            cache.put(value, orderList.add(value));
-            return false;
+            Node node = new Node(data);
+            history.add(node);
+            cache.put(data, node);
+            return true;
         }
     }
-
+    
     public int solution(int cacheSize, String[] cities) {
-        if (cacheSize == 0) return cities.length * 5;
-        LRUCache cache = new LRUCache(cacheSize);
+        if (cacheSize == 0) {
+            return cities.length * 5;
+        }
+        LruCache cache = new LruCache(cacheSize);
         int result = 0;
         for (String city : cities) {
-            String input = city.toUpperCase();
-            result += cache.add(input) ? 1 : 5;
+            String data = city.toUpperCase();
+            result += cache.add(data) ? 5 : 1;
         }
         return result;
     }
