@@ -1,65 +1,69 @@
+import java.util.*;
+
 class Solution {
-    private static final int BLANK = -1;
+    private char[][] b;
+    private int[][] dirs = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
+    private static final char EMPTY = '-';
     
-    private int[][] makeGameBoard(int m, int n, String[] board) {
-        int[][] gameBoard = new int[m][n];
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < n; j++) {
-                gameBoard[i][j] = board[i].charAt(j) - 'A';
-            }
-        }
-        return gameBoard;
-    }
-    
-    private int removeBlocks(int m, int n, int[][] gameBoard) {
-        boolean[][] removed = new boolean[m][n];
-        int removedCnt = 0;
-        for (int i = 0; i < m - 1; i++) {
-            for (int j = 0; j < n - 1; j++) {
-                int target = gameBoard[i][j];
-                if (target == BLANK) continue;
-                if (gameBoard[i + 1][j] == target && 
-                    gameBoard[i][j + 1] == target && 
-                    gameBoard[i + 1][j + 1] == target) {
-                    removed[i][j] = removed[i + 1][j] = removed[i][j + 1] = removed[i + 1][j + 1] = true;
+    private int remove(int n, int m) {
+        List<int[]> removed = new ArrayList<>();
+        for (int x = 0; x < n - 1; x++) {
+            for (int y = 0; y < m - 1; y++) {
+                if (b[x][y] != EMPTY && 
+                    b[x + 1][y] == b[x][y] && 
+                    b[x][y + 1] == b[x][y] && 
+                    b[x + 1][y + 1] == b[x][y]) {
+                    removed.add(new int[]{x, y});
                 }
             }
         }
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < n; j++) {
-                if (removed[i][j]) {
-                    gameBoard[i][j] = BLANK;
-                    removedCnt++;
+        int cnt = 0;
+        for (int[] pos : removed) {
+            for (int[] d : dirs) {
+                int x = pos[0] + d[0];
+                int y = pos[1] + d[1];
+                if (b[x][y] != EMPTY) {
+                    b[x][y] = EMPTY;
+                    cnt++;
                 }
             }
         }
-        return removedCnt;
+        return cnt;
     }
     
-    private void pulldownBlocks(int m, int n, int[][] gameBoard) {
-        for (int j = 0; j < n; j++) {
-            int writeIdx = m - 1;
-            for (int i = m - 1; i >= 0; i--) {
-                if (gameBoard[i][j] != BLANK) {
-                    int temp = gameBoard[i][j];
-                    gameBoard[i][j] = BLANK;
-                    gameBoard[writeIdx][j] = temp;
-                    writeIdx--;
+    private void fall(int n, int m) {
+        for (int y = 0; y < m; y++) {
+            int mx = 0;
+            for (int x = n - 1; x >= 0; x--) {
+                if (b[x][y] == EMPTY) {
+                    mx = x;
+                    break;
                 }
+            }
+            List<Character> li = new ArrayList<>();
+            for (int x = mx - 1; x >= 0; x--) {
+                if (b[x][y] != EMPTY) {
+                    li.add(b[x][y]);
+                    b[x][y] = EMPTY;
+                }
+            }
+            for (char ch : li) {
+                b[mx--][y] = ch;
             }
         }
     }
     
-    public int solution(int m, int n, String[] board) {
-        int[][] gameBoard = makeGameBoard(m, n, board);
+    public int solution(int n, int m, String[] board) {
+        b = new char[n][m];
+        for (int i = 0; i < n; i++) {
+            b[i] = board[i].toCharArray();
+        }
         int result = 0;
         while (true) {
-            int removedBlocks = removeBlocks(m, n, gameBoard);
-            if (removedBlocks == 0) {
-                break;
-            }
-            pulldownBlocks(m, n, gameBoard);
-            result += removedBlocks;
+            int removed = remove(n, m);
+            if (removed == 0) break;
+            result += removed;
+            fall(n, m);
         }
         return result;
     }
