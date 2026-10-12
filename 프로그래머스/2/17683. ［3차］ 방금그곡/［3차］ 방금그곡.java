@@ -1,92 +1,81 @@
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.*;
 
 class Solution {
-    private Map<String, Integer> getIdxMap() {
-        Map<String, Integer> idxMap = new HashMap<>();
-        idxMap.put("C", 0);
-        idxMap.put("C#", 1);
-        idxMap.put("D", 2);
-        idxMap.put("D#", 3);
-        idxMap.put("E", 4);
-        idxMap.put("F", 5);
-        idxMap.put("F#", 6);
-        idxMap.put("G", 7);
-        idxMap.put("G#", 8);
-        idxMap.put("A", 9);
-        idxMap.put("A#", 10);
-        idxMap.put("B", 11);
-        return idxMap;
+    static class Music implements Comparable<Music> {
+        final int id;
+        final int playTime;
+        final String title;
+        
+        public Music(int id, int playTime, String title) {
+            this.id = id;
+            this.playTime = playTime;
+            this.title = title;
+        }
+        
+        @Override
+        public int compareTo(Music o) {
+            if (playTime != o.playTime) {
+                return o.playTime - playTime;
+            }
+            return id - o.id;
+        }
     }
     
-    private String getOcta(String str, Map<String, Integer> idxMap) {
+    private List<String> alpha = List.of("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B");
+    
+    private String convert(String s) {
         StringBuilder sb = new StringBuilder();
-        int cur = 0;
-        while (cur < str.length()) {
+        int i = 0;
+        while (i < s.length()) {
             String target;
-            if (cur + 1 < str.length() && str.charAt(cur + 1) == '#') {
-                target = str.substring(cur, cur + 2);
-                cur += 2;
+            if (i < s.length() - 1 && s.charAt(i + 1) == '#') {
+                target = s.substring(i, i + 2);
+                i += 2;
             } else {
-                target = str.substring(cur, cur + 1);
-                cur++;
+                target = s.substring(i, i + 1);
+                i += 1;
             }
-            int idx = idxMap.get(target);
-            sb.append(Integer.toString(idx, 16));
+            String key = Integer.toString(alpha.indexOf(target), alpha.size());
+            sb.append(key);
         }
         return sb.toString();
     }
     
-    private Set<Character> getMelodySet(String melody) {
-        Set<Character> melodySet = new HashSet<>();
-        for (int i = 0; i < melody.length(); i++) {
-            melodySet.add(melody.charAt(i));
-            if (melodySet.size() == 12) break;
-        }
-        return melodySet;
-    }
-    
-    private int getMinutes(String time) {
+    private int minuate(String time) {
         int hh = Integer.parseInt(time.substring(0, 2));
         int mm = Integer.parseInt(time.substring(3));
         return hh * 60 + mm;
     }
     
     public String solution(String m, String[] musicinfos) {
-        Map<String, Integer> idxMap = getIdxMap();
-        String melodyOcta = getOcta(m, idxMap);
-        Set<Character> melodySet = getMelodySet(melodyOcta);
-        String result = "(None)";
-        int maxPlayTime = 0;
-        for (String info : musicinfos) {
-            String[] sp = info.split(",");
-            String octa = getOcta(sp[3], idxMap);
-            Set<Character> set = getMelodySet(octa);
-            boolean enable = true;
-            for (char ch : melodySet) {
-                if (!set.contains(ch)) {
-                    enable = false;
-                    continue;
-                }
+        String target = convert(m);
+        List<Music> matched = new ArrayList<>();
+        for (int id = 0; id < musicinfos.length; id++) {
+            String[] info = musicinfos[id].split(",");
+            int playTime = minuate(info[1]) - minuate(info[0]);
+            String title = info[2];
+            String unit = convert(info[3]);
+            String melody;
+            if (unit.length() > playTime) {
+                melody = unit.substring(0, playTime);
+            } else {
+                StringBuilder sb = new StringBuilder();
+                int repeat = playTime / unit.length();
+                int remain = playTime % unit.length();
+                while (repeat-- > 0) sb.append(unit);
+                sb.append(unit.substring(0, remain));
+                melody = sb.toString();
             }
-            if (!enable) continue;
-            int playTime = getMinutes(sp[1]) - getMinutes(sp[0]);
-            int cnt = playTime / octa.length();
-            int rest = playTime % octa.length();
-            StringBuilder sb = new StringBuilder();
-            while (cnt-- > 0) {
-                sb.append(octa);
-            }
-            if (rest > 0) {
-                sb.append(octa.substring(0, rest));
-            }
-            if (sb.toString().contains(melodyOcta) && playTime > maxPlayTime) {
-                result = sp[2];
-                maxPlayTime = playTime;
+            if (melody.length() >= target.length() && melody.contains(target)) {
+                matched.add(new Music(id, playTime, title));
             }
         }
-        return result;
+        if (matched.isEmpty()) {
+            return "(None)";
+        }
+        if (matched.size() > 1) {
+            Collections.sort(matched);
+        }
+        return matched.get(0).title;
     }
 }
