@@ -1,38 +1,34 @@
-import java.util.Queue;
-import java.util.LinkedList;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 
 class Solution {
-    private boolean isMinimal(int bit, List<Integer> result) {
-        for (int key : result) {
-            if ((bit & key) == key) {
-                return false;
+    private final List<Integer> cand = new ArrayList<>();
+    
+    private void comb(int depth, int st, int[] cols, String[][] relation) {
+        if (depth > 0 && check(depth, cols, relation)) {
+            int bit = 0;
+            for (int i = 0; i < depth; i++) {
+                bit |= 1 << cols[i];
             }
+            cand.add(bit);
+            return;
         }
-        return true;
+        if (depth == cols.length) {
+            return;
+        }
+        for (int i = st; i < cols.length; i++) {
+            cols[depth] = i;
+            comb(depth + 1, i + 1, cols, relation);
+        }
     }
     
-    private boolean isUnique(int bit, String[][] relation) {
-        List<Integer> cols = new ArrayList<>();
-        int i = 0;
-        while (bit > 0) {
-            if ((bit & 1) != 0) {
-                cols.add(i);
-            }
-            i++;
-            bit = bit >> 1;
-        }
+    private boolean check(int depth, int[] cols, String[][] relation) {
         Set<String> set = new HashSet<>();
-        for (String[] tuple : relation) {
-            StringBuilder sb = new StringBuilder();
-            for (int col : cols) {
-                sb.append(tuple[col]).append(' ');
+        for (String[] r : relation) {
+            StringBuilder key = new StringBuilder();
+            for (int i = 0; i < depth; i++) {
+                key.append(r[cols[i]]).append(' ');
             }
-            String key = sb.toString().trim();
-            if (!set.add(key)) {
+            if (!set.add(key.toString())) {
                 return false;
             }
         }
@@ -40,28 +36,25 @@ class Solution {
     }
     
     public int solution(String[][] relation) {
-        int colLen = relation[0].length;
-        Queue<Integer> q = new LinkedList<>();
-        Set<Integer> visited = new HashSet<>();
+        int m = relation[0].length;
+        comb(0, 0, new int[m], relation);
+        Collections.sort(cand, (o1, o2) -> {
+            int bc1 = Integer.bitCount(o1);
+            int bc2 = Integer.bitCount(o2);
+            if (bc1 != bc2) return bc1 - bc2;
+            return o1 - o2;
+        });
         List<Integer> result = new ArrayList<>();
-        for (int col = 0; col < colLen; col++) {
-            int bit = 1 << col;
-            q.add(bit);
-            visited.add(bit);
-        }
-        while (!q.isEmpty()) {
-            int cur = q.poll();            
-            if (!isMinimal(cur, result)) continue;
-            if (isUnique(cur, relation)) {
-                result.add(cur);
-                continue;
+        for (int key : cand) {
+            boolean minimal = true;
+            for (int k : result) {
+                if ((key & k) == k) {
+                    minimal = false;
+                    break;
+                }
             }
-            for (int i = 0; i < colLen; i++) {
-                int next = cur | (1 << i);
-                if (next == cur || visited.contains(next)) continue;
-                q.add(next);
-                visited.add(next);
-            }
+            if (minimal)
+                result.add(key);
         }
         return result.size();
     }
