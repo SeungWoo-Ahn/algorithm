@@ -1,59 +1,23 @@
-import java.util.List;
-import java.util.ArrayList;
-
 class Solution {
-    private static class Group {
-        final int st;
-        final int en;
-        
-        public Group(int st, int en) {
-            this.st = st;
-            this.en = en;
-        }
-    }
-    
-    private int calcMinChange(char target) {
-        int code = target - 'A';
-        return Math.min(code, 26 - code);
+    private int updown(char ch) {
+        return Math.min(ch - 'A', 'Z' - ch + 1);
     }
     
     public int solution(String name) {
-        int[] changeCnt = new int[name.length()];
-        int changeCntSum = 0;
-        for (int i = 0; i < name.length(); i++) {
-            changeCnt[i] = calcMinChange(name.charAt(i));
-            changeCntSum += changeCnt[i];
-        }
-        if (changeCntSum == 0) {
-            return 0;
-        }
-        List<Group> groups = new ArrayList<>();
-        int st = 0;
-        while (st < changeCnt.length) {
-            if (changeCnt[st] == 0) {
-                st++;
-                continue;
+        int n = name.length();
+        int ud = 0;
+        int lr = n - 1;
+        for (int i = 0; i < n; i++) {
+            ud += updown(name.charAt(i));
+            int next = i + 1;
+            while (next < n && name.charAt(next) == 'A') {
+                next++;
             }
-            int en = st;
-            while (en < changeCnt.length - 1 && changeCnt[en + 1] != 0) {
-                en++;
+            if (next - i > 1) {
+                int d = Math.min(i * 2 + n - next, i + (n - next) * 2);
+                lr = Math.min(lr, d);
             }
-            groups.add(new Group(st, en));
-            st = en + 1;
         }
-        int moveCntSum = Integer.MAX_VALUE;
-        for (int i = 0; i < groups.size(); i++) {
-            if (i == groups.size() - 1) {
-                int sum = groups.get(i).en;
-                moveCntSum = Math.min(moveCntSum, sum);
-                continue;
-            }
-            Group first = groups.get(i);
-            Group second = groups.get(i + 1);
-            int case1 = first.en * 2 + name.length() - second.st;
-            int case2 = first.en + (name.length() - second.st) * 2;
-            moveCntSum = Math.min(moveCntSum, Math.min(case1, case2));
-        }
-        return changeCntSum + moveCntSum;
+        return ud + lr;
     }
 }
