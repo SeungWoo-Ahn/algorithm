@@ -1,78 +1,114 @@
 import java.util.*;
 
 class Solution {
-    private int n, m, k, NONE = -1;
+    private int h, n, m, k;
     private int[] indegree;
-    private int[][] panels, elevd, cached, dp, dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-    private String[] grid;
-    private List<Integer>[] adj;
+    private int[][] elevd, paneld, cache;
+    private List<Integer>[] children;
+    private final int NONE = -1;
+    private final int[][] ds = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
     
-    private void setIndegree(int[][] seqs) {
-        indegree = new int[k];
-        adj = new List[k];
-        for (int i = 0; i < k; i++) {
-            adj[i] = new ArrayList<>();
-        }
-        for (int[] seq : seqs) {
-            int u = seq[0] - 1;
-            int v = seq[1] - 1;
-            indegree[v]++;
-            adj[u].add(v);
-        }
-    }
-    
-    private void setElevd() {
-        elevd = new int[n][m];
-        int sx = 0, sy = 0;
-        for (int x = 0; x < n; x++) {
-            boolean found = false;
-            for (int y = 0; y < m; y++) {
-                if (grid[x].charAt(y) == '@') {
-                    found = true;
-                    sx = x;
-                    sy = y;
-                    break;
-                }
-            }
-            if (found) break;
-        }
+    private void setElevd(String[] grid) {
+        int[] elevPos = findElev(grid);
         Deque<int[]> dq = new ArrayDeque<>();
         boolean[][] v = new boolean[n][m];
-        dq.addLast(new int[]{sx, sy});
-        v[sx][sy] = true;
+        int cost = 0;
+        elevd = new int[n][m];
+        dq.addLast(elevPos);
+        v[elevPos[0]][elevPos[1]] = true;
         while (!dq.isEmpty()) {
-            int[] cur = dq.removeFirst();
-            for (int[] dir : dirs) {
-                int nx = cur[0] + dir[0];
-                int ny = cur[1] + dir[1];
-                if (oob(nx, ny) || v[nx][ny]) continue;
-                if (grid[nx].charAt(ny) == '#') continue;
-                dq.addLast(new int[]{nx, ny});
-                v[nx][ny] = true;
-                elevd[nx][ny] = elevd[cur[0]][cur[1]] + 1;
+            int size = dq.size();
+            while (size-- > 0) {
+                int[] cur = dq.removeFirst();
+                elevd[cur[0]][cur[1]] = cost;
+                for (int[] d : ds) {
+                    int nx = cur[0] + d[0];
+                    int ny = cur[1] + d[1];
+                    if (nx < 0 || nx >= n || ny < 0 || ny >= m) continue;
+                    if (v[nx][ny] || grid[nx].charAt(ny) == '#') continue;
+                    dq.addLast(new int[]{nx, ny});
+                    v[nx][ny] = true;
+                }
             }
+            cost++;
         }
     }
     
-    private boolean oob(int x, int y) {
-        return x < 0 || x >= n || y < 0 || y >= m;
-    }
-    
-    private void setCached() {
-        cached = new int[k][k];
-        for (int i = 0; i < k; i++) {
-            for (int j = 0; j < k; j++) {
-                if (i != j) {
-                    cached[i][j] = NONE;
+    private int[] findElev(String[] grid) {
+        for (int x = 0; x < grid.length; x++) {
+            for (int y = 0; y < grid[x].length(); y++) {
+                if (grid[x].charAt(y) == '@') {
+                    return new int[]{x, y};
                 }
             }
         }
+        throw new IllegalStateException("No Elevator");
     }
     
-    private void setDp() {
-        dp = new int[k][1 << k];
+    private void setPaneld(String[] grid, int[][] panels) {
+        paneld = new int[k][k];
+        for (int i = 0; i < k - 1; i++) {
+            for (int j = i + 1; j < k; j++) {
+                int[] u = panels[i];
+                int[] v = panels[j];
+                int[] from = new int[]{u[1] - 1, u[2] - 1};
+                int[] to = new int[]{v[1] - 1, v[2] - 1};
+                int cost;
+                if (u[0] != v[0]) {
+                    cost = elevd[from[0]][from[1]] + Math.abs(u[0] - v[0]) + elevd[to[0]][to[1]];
+                } else {
+                    cost = distance(from, to, grid);
+                }
+                paneld[i][j] = cost;
+                paneld[j][i] = cost;
+            }
+        }
+    }
+    
+    private int distance(int[] from, int[] to, String[] grid) {
+        Deque<int[]> dq = new ArrayDeque<>();
+        boolean[][] v = new boolean[n][m];
+        dq.addLast(from);
+        v[from[0]][from[1]] = true;
+        int cost = 0;
+        while (!dq.isEmpty()) {
+            int size = dq.size();
+            while (size-- > 0) {
+                int[] cur = dq.removeFirst();
+                if (cur[0] == to[0] && cur[1] == to[1])
+                    return cost;
+                for (int[] d : ds) {
+                    int nx = cur[0] + d[0];
+                    int ny = cur[1] + d[1];
+                    if (nx < 0 || nx >= n || ny < 0 || ny >= m) continue;
+                    if (v[nx][ny] || grid[nx].charAt(ny) == '#') continue;
+                    dq.addLast(new int[]{nx, ny});
+                    v[nx][ny] = true;
+                }
+            }
+            cost++;
+        }
+        return cost;
+    }
+    
+    private void setChildren(int[][] seqs) {
+        children = new List[k];
+        indegree = new int[k];
         for (int i = 0; i < k; i++) {
-            Arrays.fill(dp[i], NONE);
+            children[i] = new ArrayList<>();
+        }
+        for (int[] seq : seqs) {
+            int a = seq[0] - 1;
+            int b = seq[1] - 1;
+            children[a].add(b);
+            indegree[b]++;
+        }
+    }
+    
+    private void setCache() {
+        cache = new int[k][1 << k];
+        for (int i = 0; i < k; i++) {
+            Arrays.fill(cache[i], NONE);
         }
     }
     
@@ -80,87 +116,45 @@ class Solution {
         if (v == (1 << k) - 1) {
             return 0;
         }
-        if (dp[cur][v] != NONE) {
-            return dp[cur][v];
+        if (cache[cur][v] != NONE) {
+            return cache[cur][v];
         }
         int min = Integer.MAX_VALUE;
-        for (int i = 0; i < k; i++) {
-            if (indegree[i] == 0 && (v & (1 << i)) == 0) {
-                for (int nxt : adj[i]) {
-                    indegree[nxt]--;
+        for (int nxt = 0; nxt < k; nxt++) {
+            if (indegree[nxt] == 0 && (v & (1 << nxt)) == 0) {
+                for (int child : children[nxt]) {
+                    indegree[child]--;
                 }
-                if (cached[cur][i] == NONE) {
-                    int d = getd(cur, i);
-                    cached[cur][i] = cached[i][cur] = d;
-                }                
-                min = Math.min(min, dfs(i, v | (1 << i)) + cached[cur][i]);
-                for (int nxt : adj[i]) {
-                    indegree[nxt]++;
+                int cost = dfs(nxt, v | (1 << nxt)) + paneld[cur][nxt];
+                min = Math.min(min, cost);
+                for (int child : children[nxt]) {
+                    indegree[child]++;
                 }
             }
         }
-        return dp[cur][v] = min;
+        return cache[cur][v] = min;
     }
     
-    private int getd(int a, int b) {
-        if (a == b) {
-            return 0;
-        }
-        int[] from = panels[a];
-        int[] to = panels[b];
-        if (from[0] != to[0]) {
-            return elevd[from[1] - 1][from[2] - 1] + 
-                Math.abs(from[0] - to[0]) + 
-                elevd[to[1] - 1][to[2] - 1];
-        }
-        Deque<int[]> dq = new ArrayDeque<>();
-        boolean[][] v = new boolean[n][m];
-        dq.addLast(new int[]{from[1] - 1, from[2] - 1});
-        int d = 0;
-        while (!dq.isEmpty()) {
-            int size = dq.size();
-            while (size-- > 0) {
-                int[] cur = dq.removeFirst();
-                if (cur[0] == to[1] - 1 && cur[1] == to[2] - 1) {
-                    return d;
-                }
-                for (int[] dir : dirs) {
-                    int nx = cur[0] + dir[0];
-                    int ny = cur[1] + dir[1];
-                    if (oob(nx, ny) || v[nx][ny]) continue;
-                    if (grid[nx].charAt(ny) == '#') continue;
-                    dq.addLast(new int[]{nx, ny});
-                    v[nx][ny] = true;
-                }
-            }
-            d++;
-        }
-        return d;
-    }
-    
+    // 패널: f층 r행 c열, 기술자는 1번에서 시작
     public int solution(int h, String[] grid, int[][] panels, int[][] seqs) {
-        n = grid.length;
-        m = grid[0].length();
-        k = panels.length;
-        this.panels = panels;
-        this.grid = grid;
-        setIndegree(seqs);
-        setElevd();
-        setCached();
-        setDp();
+        this.h = h;
+        this.n = grid.length;
+        this.m = grid[0].length();
+        this.k = panels.length;
+        setElevd(grid);
+        setPaneld(grid, panels);
+        setChildren(seqs);
+        setCache();
         int result = Integer.MAX_VALUE;
-        for (int i = 0; i < k; i++) {
-            if (indegree[i] != 0) continue;
-            for (int nxt : adj[i]) {
-                indegree[nxt]--;
+        for (int nxt = 0; nxt < k; nxt++) {
+            if (indegree[nxt] != 0) continue;
+            for (int child : children[nxt]) {
+                indegree[child]--;
             }
-            if (cached[0][i] == NONE) {
-                int d = getd(0, i);
-                cached[0][i] = cached[i][0] = d;
-            }
-            result = Math.min(result, dfs(i, 1 << i) + cached[0][i]);
-            for (int nxt : adj[i]) {
-                indegree[nxt]++;
+            int cost = dfs(nxt, 1 << nxt) + paneld[0][nxt];
+            result = Math.min(result, cost);
+            for (int child : children[nxt]) {
+                indegree[child]++;
             }
         }
         return result;
